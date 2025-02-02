@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<link rel="stylesheet" href="/static/css/board.css">
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.js"
+    integrity="sha384-oeUn82QNXPuVkGCkcrInrS1twIxKhkZiFfr2TdiuObZ3n3yIeMiqcRzkIcguaof1"
+    crossorigin="anonymous"></script>
+<script defer src="/static/js/board.js"></script>
+{% endblock %}
+
+{% block content %}
+<main class="board">
+    <section class="column draggable dropzone">
+        <p>column 1</p>
+        <article class="card draggable">
+            <p>card 1</p>
+        </article>
+    </section>
+    <section class="column draggable dropzone">
+        <p>column 2</p>
+        <article class="card draggable">
+            <p>card 2</p>
+        </article>
+        <article class="card draggable">
+            <p>card 3</p>
+        </article>
+    </section>
+</main>
+{% endblock %}
