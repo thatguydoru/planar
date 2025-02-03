@@ -3,69 +3,75 @@
         draggable: Element,
         dropzone: Element,
         mouseCoords: { x: number, y: number }
-    }} DropDetail
+    }} DropEventDetail
 
-    @typedef { x: number, y: number } Point
+    @typedef {{
+        draggable: Element,
+        ghost: Element,
+        mouseCoords: { x: number, y: number }
+    }} DragEventDetail
 */
 
 class DragDropInteraction extends EventTarget {
-    #offsetX = 0;
-    #offsetY = 0;
+    #oldClientX = 0;
+    #oldClientY = 0;
 
     /**
-        @param {Element} root
         @param {boolean} [hideTarget=true]
         @param {number} [ghostZ=1]
     */
-    constructor(root, hideTarget = true, ghostZ = 1) {
+    constructor(hideTarget = true, ghostZ = 1) {
         super();
-        this.root = root;
 
         for (const draggable of this.draggables) {
             draggable.addEventListener("mousedown", event => {
                 event.preventDefault();
-                event.stopPropagation();
-                this.startDrag(draggable, event.offsetX, event.offsetY);
-                this.summonGhost(ghostZ);
-                this.dragGhost(event.clientX, event.clientY);
-                draggable.hidden = hideTarget;
+                this.startDrag(draggable, event.clientX, event.clientY);
             });
         }
 
-        this.root.addEventListener("mousemove", event => {
-            if (this.active) {
+        document.addEventListener("mousemove", event => {
+            if (this.target) {
                 const { clientX, clientY } = event;
+
+                if (!this.ghost) {
+                    this.summonGhost(ghostZ);
+                    this.target.classList.add("dragged");
+                    this.target.hidden = hideTarget;
+                }
+
                 this.dragGhost(clientX, clientY);
-                this.emitDragEvent({ x: clientX, y: clientY });
+                this.emitDragEvent(clientX, clientY);
             }
         });
 
-        this.root.addEventListener("mouseup", event => {
+        document.addEventListener("mouseup", event => {
             if (this.active) {
+                const { clientX, clientY } = event;
                 for (const dropzone of this.dropzones) {
                     const dropIt = dropzone !== this.target
-                        && pointInElement(event.clientX, event.clientY, dropzone);
+                        && pointInElement(clientX, clientY, dropzone);
                     if (dropIt) {
-                        this.emitDropEvent(dropzone, event.clientX, event.clientY);
+                        this.emitDropEvent(dropzone, clientX, clientY);
                         break;
                     }
                 }
                 this.endDrag();
-                this.reset();
             }
+            this.reset();
         });
     }
 
     get active() {
-        return !!this.target;
+        return !!this.target && this.ghost;
     }
 
     get draggables() {
-        return this.root.querySelectorAll(".draggable");
+        return document.querySelectorAll(".draggable");
     }
 
     get dropzones() {
-        return this.root.querySelectorAll(".dropzone");
+        return document.querySelectorAll(".dropzone");
     }
 
     /**
@@ -76,8 +82,8 @@ class DragDropInteraction extends EventTarget {
         this.ghost.style.position = "fixed";
         this.ghost.style.zIndex = ghostZ;
         this.ghost.classList.add("drag-ghost");
-        this.ghost.classList.remove("dropzone", "dragging", "draggable");
-        this.root.append(this.ghost);
+        this.ghost.classList.remove("dropzone", "draggable");
+        document.body.firstChild.before(this.ghost);
     }
 
     /**
@@ -85,21 +91,20 @@ class DragDropInteraction extends EventTarget {
         @param {number} clientY
     */
     dragGhost(clientX, clientY) {
-        const offsetParentRect = this.ghost.offsetParent.getBoundingClientRect();
-        this.ghost.style.left =
-            clientX - this.#offsetX - offsetParentRect.left + "px";
-        this.ghost.style.top =
-            clientY - this.#offsetY - offsetParentRect.top + "px";
+        const rect = this.target.getBoundingClientRect();
+        this.ghost.style.left = rect.left + (clientX - this.#oldClientX) + "px";
+        this.ghost.style.top = rect.top + (clientY - this.#oldClientY) + "px";
     }
 
     /**
-        @param {Point} mouseCoords
+        @param {number} x
+        @param {number} y
     */
-    emitDragEvent(mouseCoords) {
+    emitDragEvent(x, y) {
         const detail = {
             draggable: this.target,
             ghost: this.ghost,
-            mouseCoords,
+            mouseCoords: { x, y },
         };
         const event = new CustomEvent("drag", { detail });
         this.dispatchEvent(event);
@@ -120,25 +125,24 @@ class DragDropInteraction extends EventTarget {
 
     /**
         @param {Element} target
-        @param {number} offsetX
-        @param {number} offsetY
+        @param {number} clientX
+        @param {number} clientY
     */
-    startDrag(target, offsetX, offsetY) {
+    startDrag(target, clientX, clientY) {
         this.target = target;
-        this.#offsetX = offsetX;
-        this.#offsetY = offsetY;
-        this.target.classList.add("dragging");
+        this.#oldClientX = clientX;
+        this.#oldClientY = clientY;
     }
 
     endDrag() {
-        this.ghost.remove();
+        this.ghost?.remove();
         this.target.hidden = false;
-        this.target.classList.remove("dragging");
+        this.target.classList.remove("dragged");
     }
 
     reset() {
-        this.#offsetX = 0;
-        this.#offsetY = 0;
+        this.#oldClientX = 0;
+        this.#oldClientY = 0;
         this.target = null;
         this.ghost = null;
     }
@@ -158,12 +162,12 @@ function pointInElement(x, y, element) {
 }
 
 /**
-    @param {Point} point
+    @param {number} x
+    @param {number} y
     @param {Element} element
 */
-function topOrBottom(point, element) {
+function topOrBottom(x, y, element) {
     const rect = element.getBoundingClientRect();
-    const { x, y } = point;
 
     if (pointInElement(x, y, element)) {
         const mid = rect.top + rect.height / 2;
@@ -175,10 +179,13 @@ function topOrBottom(point, element) {
 
 // -------- MAIN --------
 
-const dragdrop = new DragDropInteraction(document.body, false, 2);
+const board = document.querySelector(".board");
+const cards = document.querySelectorAll(".cards");
+const columns = document.querySelectorAll(".column");
+const dragdrop = new DragDropInteraction(false, 2);
 
 dragdrop.addEventListener("drop", event => {
-    /** @type DropDetail */
+    /** @type DropEventDetail */
     const { draggable, dropzone, mouseCoords } = event.detail;
     const isCard = draggable.classList.contains("card");
     const isColumn = dropzone.classList.contains("column");
@@ -190,7 +197,7 @@ dragdrop.addEventListener("drop", event => {
             return;
         }
         for (const columnCard of columnCards) {
-            switch (topOrBottom(mouseCoords, columnCard)) {
+            switch (topOrBottom(mouseCoords,x, mouseCoords.y, columnCard)) {
                 case "top":
                     columnCard.before(draggable);
                     return;

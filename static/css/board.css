@@ -1,12 +1,8 @@
 .card {
     border: 2px solid black;
-    width: 144px;
-    height: 78px;
 }
 
 .column {
-    height: 512px;
-    width: 158px;
     border: 2px solid black;
 }
 
@@ -14,6 +10,6 @@
     display: inline-flex;
 }
 
-.dragging {
+.dragged {
     opacity: 50%;
 }

@@ -13,20 +13,19 @@
 
 {% block content %}
 <main class="board">
-    <section class="column draggable dropzone">
-        <p>column 1</p>
-        <article class="card draggable">
-            <p>card 1</p>
-        </article>
+    {% for column in columns %}
+    <section data-id="{{ column.id }}" class="column draggable dropzone">
+        <header>
+            <h2>{{ column.title }}</h2>
+            <menu>
+                <li>
+                    <button>New Card</button>
+                </li>
+            </menu>
+        </header>
+        <div id="new-card-target"></div>
+        <div id="cards-loader" hx-get="/cards" hx-swap="outerHTML"></div>
     </section>
-    <section class="column draggable dropzone">
-        <p>column 2</p>
-        <article class="card draggable">
-            <p>card 2</p>
-        </article>
-        <article class="card draggable">
-            <p>card 3</p>
-        </article>
-    </section>
+    {% endfor %}
 </main>
 {% endblock %}
