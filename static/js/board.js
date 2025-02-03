@@ -63,7 +63,7 @@ class DragDropInteraction extends EventTarget {
     }
 
     get active() {
-        return !!this.target && this.ghost;
+        return this.target && this.ghost;
     }
 
     get draggables() {
@@ -75,12 +75,12 @@ class DragDropInteraction extends EventTarget {
     }
 
     /**
-        @param {number} ghostZ;
+        @param {number} zIndex;
     */
-    summonGhost(ghostZ) {
+    summonGhost(zIndex) {
         this.ghost = this.target.cloneNode(true);
         this.ghost.style.position = "fixed";
-        this.ghost.style.zIndex = ghostZ;
+        this.ghost.style.zIndex = zIndex;
         this.ghost.classList.add("drag-ghost");
         this.ghost.classList.remove("dropzone", "draggable");
         document.body.firstChild.before(this.ghost);
@@ -112,6 +112,8 @@ class DragDropInteraction extends EventTarget {
 
     /**
         @param {Element} dropzone
+        @param {number} x
+        @param {number} y
     */
     emitDropEvent(dropzone, x, y) {
         const detail = {
@@ -185,7 +187,9 @@ const columns = document.querySelectorAll(".column");
 const dragdrop = new DragDropInteraction(false, 2);
 
 dragdrop.addEventListener("drop", event => {
-    /** @type DropEventDetail */
+    /**
+        @type DropEventDetail
+    */
     const { draggable, dropzone, mouseCoords } = event.detail;
     const isCard = draggable.classList.contains("card");
     const isColumn = dropzone.classList.contains("column");
@@ -197,7 +201,7 @@ dragdrop.addEventListener("drop", event => {
             return;
         }
         for (const columnCard of columnCards) {
-            switch (topOrBottom(mouseCoords,x, mouseCoords.y, columnCard)) {
+            switch (topOrBottom(mouseCoords.x, mouseCoords.y, columnCard)) {
                 case "top":
                     columnCard.before(draggable);
                     return;
