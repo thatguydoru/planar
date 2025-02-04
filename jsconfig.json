@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "moduleResolution": "node",
+    "resolveJsonModules": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "baseUrl": "./public/js/"
+  },
+  "include": ["**/*.js"],
+  "exclude": ["node_modules"]
+}

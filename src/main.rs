@@ -22,9 +22,11 @@ async fn main() -> io::Result<()> {
 
     let app = Router::new()
         .route("/boards", get(boards))
+        .route("/columns", get(columns))
         .route("/cards", get(cards))
         .route("/ping", get(ping))
-        .nest_service("/static", ServeDir::new("static"))
+        .nest_service("/public", ServeDir::new("public"))
+        .nest_service("/third-party", ServeDir::new("node_modules"))
         .fallback(|| async { AppError::NotFound })
         .layer(TraceLayer::new_for_http());
 
@@ -54,3 +56,5 @@ async fn boards() -> impl IntoResponse {
 }
 
 async fn cards() -> impl IntoResponse {}
+
+async fn columns() -> impl IntoResponse {}

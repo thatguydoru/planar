@@ -1,31 +1,15 @@
 {% extends "base.html" %}
 
-{% block styles %}
-<link rel="stylesheet" href="/static/css/board.css">
-{% endblock %}
-
-{% block scripts %}
-<script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.js"
-    integrity="sha384-oeUn82QNXPuVkGCkcrInrS1twIxKhkZiFfr2TdiuObZ3n3yIeMiqcRzkIcguaof1"
-    crossorigin="anonymous"></script>
-<script defer src="/static/js/board.js"></script>
+{% block meta %}
+<link rel="stylesheet" href="/public/css/board.css">
+<script src="/third-party/htmx.org/dist/htmx.js"></script>
+<script type="module" src="/public/js/board.js"></script>
 {% endblock %}
 
 {% block content %}
 <main class="board">
     {% for column in columns %}
-    <section data-id="{{ column.id }}" class="column draggable dropzone">
-        <header>
-            <h2>{{ column.title }}</h2>
-            <menu>
-                <li>
-                    <button>New Card</button>
-                </li>
-            </menu>
-        </header>
-        <div id="new-card-target"></div>
-        <div id="cards-loader" hx-get="/cards" hx-swap="outerHTML"></div>
-    </section>
+        {% include "board/column.html" %}
     {% endfor %}
 </main>
 {% endblock %}

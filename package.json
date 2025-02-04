@@ -1,0 +1,6 @@
+{
+  "main": "./public/js/",
+  "dependencies": {
+    "htmx.org": "^2.0.4"
+  }
+}
