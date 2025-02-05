@@ -14,16 +14,17 @@ dragdrop.addEventListener("drop", event => {
             dropzone.append(draggable);
             return;
         }
-        for (const columnCard of cards) {
-            switch (topOrBottom(mouseCoords.x, mouseCoords.y, columnCard)) {
+        for (const card of cards) {
+            switch (topOrBottom(mouseCoords.x, mouseCoords.y, card)) {
                 case "top":
-                    columnCard.before(draggable);
+                    card.before(draggable);
                     return;
                 case "bottom":
-                    columnCard.after(draggable);
+                    card.after(draggable);
                     return;
                 case "none":
                     dropzone.append(draggable);
+                    return;
             }
         }
     }
