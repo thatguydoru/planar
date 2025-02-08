@@ -1,19 +1,19 @@
-use crate::fields::*;
+use crate::fields::{
+    CardActiveStateField, CharField, ForeignKeyField, Id, RgbaColorField, TextField,
+    TitleField,
+};
 
-pub type TitleField = CharField<255>;
-
-#[derive(Debug, Default)]
-pub enum CardActiveState {
-    #[default]
-    Todo,
-    Doing,
-    Done,
-    Archived,
+#[derive(Debug)]
+pub struct User {
+    pub id: Id,
+    pub username: CharField<255>,
 }
 
 #[derive(Debug)]
 pub struct Board {
     pub id: Id,
+    pub owner: ForeignKeyField<User, Id>,
+
     pub title: TitleField,
     pub description: TextField,
 }
@@ -21,21 +21,22 @@ pub struct Board {
 #[derive(Debug)]
 pub struct Column {
     pub id: Id,
-    pub board_id: Id,
-    pub ownder_id: Id,
+    pub owner: ForeignKeyField<User, Id>,
+    pub board: ForeignKeyField<Board, Id>,
 
     pub title: TitleField,
     pub description: TextField,
-    pub color: ColorField,
+    pub color: RgbaColorField,
 }
 
 #[derive(Debug)]
 pub struct Card {
     pub id: Id,
-    pub owner_id: Id,
-    pub column_id: Id,
+    pub owner: ForeignKeyField<User, Id>,
+    pub board: ForeignKeyField<Board, Id>,
+    pub column: ForeignKeyField<Column, Id>,
 
     pub title: TitleField,
     pub description: TextField,
-    pub active_state: CardActiveState,
+    pub active_state: CardActiveStateField,
 }
