@@ -1,5 +1,4 @@
 mod errors;
-mod fields;
 mod models;
 mod routes;
 mod templates;

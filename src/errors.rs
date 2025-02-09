@@ -1,20 +1,27 @@
+use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 
 use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse, Response};
 use rinja::Template;
-use thiserror::Error;
 
-#[derive(Template)]
-#[template(path = "error.html")]
-struct ErrorTemplate {
-    status: StatusCode,
-}
+use crate::templates::ErrorTemplate;
 
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum AppError {
     NotFound,
     Internal,
+}
+
+impl Error for AppError {}
+
+impl Display for AppError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            AppError::NotFound => write!(f, "page not found"),
+            AppError::Internal => write!(f, "internal error"),
+        }
+    }
 }
 
 impl IntoResponse for AppError {
@@ -29,9 +36,17 @@ impl IntoResponse for AppError {
     }
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub struct ValueError {
     pub message: String,
+}
+
+impl Error for ValueError {}
+
+impl Display for ValueError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "ValueError: {}", self.message)
+    }
 }
 
 impl<'a> From<&'a str> for ValueError {
@@ -39,11 +54,5 @@ impl<'a> From<&'a str> for ValueError {
         Self {
             message: value.to_string(),
         }
-    }
-}
-
-impl Display for ValueError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "ValueError: {}", self.message)
     }
 }
