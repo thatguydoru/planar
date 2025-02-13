@@ -1,4 +1,20 @@
+"use strict";
+
 import { pointInElement } from 'lib/utils.js';
+
+/**
+    @typedef {{
+        draggable: Element,
+        dropzone: Element,
+        mouseCoords: { x: number, y: number }
+    }} DropDetail
+
+    @typedef {{
+        draggable: Element,
+        ghost: Element,
+        mouseCoords: { x: number, y: number },
+    }} DragDetail
+*/
 
 export class DragDropInteraction extends EventTarget {
     #oldClientX = 0;
@@ -73,7 +89,7 @@ export class DragDropInteraction extends EventTarget {
     }
 
     /**
-        @param {number} zIndex;
+        @param {number} zIndex
     */
     summonGhost(zIndex) {
         this.ghost = this.target.cloneNode(true);
@@ -81,7 +97,7 @@ export class DragDropInteraction extends EventTarget {
         this.ghost.style.zIndex = zIndex;
         this.ghost.classList.add("drag-ghost");
         this.ghost.classList.remove("dropzone", "draggable");
-        document.body.firstChild.before(this.ghost);
+        document.body.insertAdjacentElement("afterbegin", this.ghost);
     }
 
     /**
@@ -89,9 +105,9 @@ export class DragDropInteraction extends EventTarget {
         @param {number} clientY
     */
     dragGhost(clientX, clientY) {
-        const x = this.#oldLeft + (clientX - this.#oldClientX) + "px";
-        const y = this.#oldTop + (clientY - this.#oldClientY) + "px";
-        this.ghost.style.transform = `translate(${x}, ${y})`;
+        const x = this.#oldLeft + (clientX - this.#oldClientX);
+        const y = this.#oldTop + (clientY - this.#oldClientY);
+        this.ghost.style.transform = `translate(${x}px, ${y}px)`;
     }
 
     /**
@@ -99,6 +115,7 @@ export class DragDropInteraction extends EventTarget {
         @param {number} y
     */
     emitDragEvent(x, y) {
+        /** @type DragDetail */
         const detail = {
             draggable: this.target,
             ghost: this.ghost,
@@ -114,6 +131,7 @@ export class DragDropInteraction extends EventTarget {
         @param {number} y
     */
     emitDropEvent(dropzone, x, y) {
+        /** @type DropDetail */
         const detail = {
             draggable: this.target,
             dropzone,

@@ -1,8 +1,8 @@
 use sqlx::SqlitePool;
 
-use crate::error::AppError;
+use crate::error::ModelError;
 
-type Result<T> = std::result::Result<T, AppError>;
+pub type Result<T> = std::result::Result<T, ModelError>;
 
 pub struct User {
     pub id: i64,
@@ -10,27 +10,32 @@ pub struct User {
 }
 
 impl User {
-    pub async fn query_by_id(db: &SqlitePool, id: i64) -> Result<Self> {
-        let user = sqlx::query_as!(Self, r#"SELECT * FROM users WHERE id=?1 "#, id)
-            .fetch_one(db)
+    pub async fn query_by_id(pool: &SqlitePool, id: i64) -> Result<Self> {
+        let user = sqlx::query_as!(Self, r#"SELECT id, username FROM users WHERE id=?1 "#, id)
+            .fetch_one(pool)
             .await?;
 
         Ok(user)
     }
 
-    // TODO: Check if username is within limit of 255 length.
-    pub async fn change_username(db: &SqlitePool, id: i64, username: &str) -> Result<u64> {
-        let rows = sqlx::query!(r#"UPDATE users SET username=?1 WHERE id=?2"#, username, id)
-            .execute(db)
+    pub async fn change_username(pool: &SqlitePool, id: i64, username: &str) -> Result<()> {
+        if username.len() > 255 {
+            return Err(ModelError::value(
+                "Username must be at most 255 characters long.",
+            ));
+        }
+
+        sqlx::query!(r#"UPDATE users SET username=?1 WHERE id=?2"#, username, id)
+            .execute(pool)
             .await?
             .rows_affected();
 
-        Ok(rows)
+        Ok(())
     }
 
-    pub async fn save(mut self, db: &SqlitePool) -> Result<Self> {
-        self.id = sqlx::query!(r#"INSERT INTO users (username) VALUES (?1)"#, self.username)
-            .execute(db)
+    pub async fn save(mut self, pool: &SqlitePool) -> Result<Self> {
+        self.id = sqlx::query!(r#"INSERT INTO users(username) VALUES (?1)"#, self.username)
+            .execute(pool)
             .await?
             .last_insert_rowid();
 

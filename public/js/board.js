@@ -1,9 +1,12 @@
-import { DragDropInteraction } from 'lib/interactions.js';
+"use strict";
+
+import { DragDropInteraction, DropDetail } from 'lib/interactions.js';
 import { topOrBottom } from 'lib/utils.js';
 
 const dragdrop = new DragDropInteraction(false, 2);
 
 dragdrop.addEventListener("drop", event => {
+    /** @type DropDetail */
     const { draggable, dropzone, mouseCoords } = event.detail;
     const isCard = draggable.classList.contains("card");
     const isColumn = dropzone.classList.contains("column");

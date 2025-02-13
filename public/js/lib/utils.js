@@ -1,3 +1,5 @@
+"use strict";
+
 /**
     @param {number} x
     @param {number} y
@@ -21,7 +23,7 @@ export function topOrBottom(x, y, element) {
 
     if (pointInElement(x, y, element)) {
         const mid = rect.top + rect.height / 2;
-        return y >= rect.top && y <= mid ? "top" : "bottom";
+        return y >= rect.top && y < mid ? "top" : "bottom";
     }
 
     return "none";

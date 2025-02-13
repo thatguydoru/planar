@@ -10,25 +10,25 @@ use crate::templates::ErrorTemplate;
 #[derive(Debug)]
 pub enum AppError {
     Http(StatusCode),
-    Internal(ErrorKind),
+    Internal,
 }
-
-impl Error for AppError {}
 
 impl Display for AppError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             AppError::Http(code) => write!(f, "{code}"),
-            AppError::Internal(kind) => write!(f, "{kind}"),
+            AppError::Internal => write!(f, "500 Internal Error"),
         }
     }
 }
+
+impl Error for AppError {}
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let status = match &self {
             AppError::Http(errcode) => *errcode,
-            AppError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Internal => StatusCode::INTERNAL_SERVER_ERROR,
         };
         let template = ErrorTemplate { status }.render().unwrap();
 
@@ -36,23 +36,31 @@ impl IntoResponse for AppError {
     }
 }
 
-impl From<sqlx::Error> for AppError {
-    fn from(value: sqlx::Error) -> Self {
-        AppError::Internal(ErrorKind::DatabaseError(value))
+#[derive(Debug)]
+pub enum ModelError {
+    Value(String),
+    Database(sqlx::Error),
+}
+
+impl ModelError {
+    pub fn value(message: &str) -> Self {
+        Self::Value(message.to_string())
     }
 }
 
-#[derive(Debug)]
-pub enum ErrorKind {
-    ValueError(String),
-    DatabaseError(sqlx::Error),
-}
-
-impl Display for ErrorKind {
+impl Display for ModelError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            ErrorKind::ValueError(message) => write!(f, "{message}"),
-            ErrorKind::DatabaseError(error) => todo!(),
+            ModelError::Value(message) => write!(f, "{message}"),
+            ModelError::Database(error) => write!(f, "{error}"),
         }
+    }
+}
+
+impl Error for ModelError {}
+
+impl From<sqlx::Error> for ModelError {
+    fn from(value: sqlx::Error) -> Self {
+        Self::Database(value)
     }
 }
