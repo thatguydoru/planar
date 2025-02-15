@@ -2,13 +2,12 @@ use std::env;
 use std::sync::Arc;
 
 use axum::extract::{Query, State};
+use axum::response::Result;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
 use serde::Deserialize;
 use sqlx::SqlitePool;
-
-use crate::error::ResponseError;
 
 struct AppState {
     pool: SqlitePool,
@@ -40,9 +39,10 @@ pub async fn new_boards_router() -> Result<Router, sqlx::Error> {
 pub async fn get_boards(
     State(state): State<Arc<AppState>>,
     Query(params): Query<Pagination>,
-) -> Result<impl IntoResponse, ResponseError> {
+) -> Result<impl IntoResponse> {
     let user: i64 = 0; // TODO: How to get this?
 
+    // TODO: Handle the error.
     let boards = sqlx::query!(
         r#"SELECT title, description FROM boards WHERE owner=?"#,
         user
@@ -53,10 +53,10 @@ pub async fn get_boards(
     Ok(())
 }
 
-pub async fn new_board() -> Result<impl IntoResponse, ResponseError> {
+pub async fn new_board() -> Result<impl IntoResponse> {
     Ok(())
 }
 
-pub async fn get_board() -> Result<impl IntoResponse, ResponseError> {
+pub async fn get_board() -> Result<impl IntoResponse> {
     Ok(())
 }
