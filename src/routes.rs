@@ -48,7 +48,7 @@ pub async fn get_boards(
         user
     )
     .fetch_all(&state.pool)
-    .await?;
+    .await;
 
     Ok(())
 }
