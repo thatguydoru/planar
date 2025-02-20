@@ -1,0 +1,25 @@
+<article>
+    <h3>Sign Up</h3>
+    <form action="/signup" method="post">
+        <label for="username">Username:</label>
+        <input
+            id="username"
+            name="username"
+            type="text"
+            minlength="8"
+            maxlength="255"
+            {% if let Some(username) = username %}
+            value="{{ username }}"
+            {% endif %}
+            required>
+        <label for="password">Password:</label>
+        <input
+            id="password"
+            name="password"
+            type="password"
+            minlength="8"
+            maxlength="256"
+            required>
+        <button type="submit">Go!</button>
+    </form>
+</article>

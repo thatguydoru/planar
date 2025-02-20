@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block meta %}
+<script src="/third_party/htmx.org/dist/htmx.js"></script>
+{% endblock %}
+
+{% block content %}
+<main>
+    <section>
+    {% include "auth/partial/signup.html" %}
+    {% include "auth/partial/signin.html" %}
+    </section>
+</main>
+{% endblock %}

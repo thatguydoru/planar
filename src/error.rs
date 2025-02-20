@@ -1,49 +1,85 @@
-use std::error::Error;
+use std::error::Error as StdError;
 use std::fmt::{self, Display, Formatter};
+use std::io;
 
 use axum::http::StatusCode;
-use axum::response::{Html, IntoResponse, Response};
+use axum::response::{IntoResponse, Response};
 use rinja::Template;
 
-use crate::templates::ErrorTemplate;
+use crate::utils::render_now;
 
-macro_rules! from_error_to_internal_impl {
-    ($type:ty, $implementor:ty) => {
-        impl From<$type> for $implementor {
+#[derive(Debug)]
+pub struct Error {
+    pub message: String,
+    pub kind: Option<ErrorKind>,
+}
+
+impl Error {
+    pub fn err_to_other(message: &str, error: Box<dyn StdError>) -> Self {
+        Self {
+            message: message.to_string(),
+            kind: Some(ErrorKind::Other(error)),
+        }
+    }
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match &self.kind {
+            Some(kind) => write!(f, "{}\nCaused by: {kind:?}", self.message),
+            None => write!(f, "{}", self.message),
+        }
+    }
+}
+
+impl StdError for Error {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        self.kind.as_ref().map(|kind| match kind {
+            ErrorKind::Sqlx(err) => err,
+            ErrorKind::Other(err) => err.as_ref(),
+        })
+    }
+}
+
+impl IntoResponse for Error {
+    fn into_response(self) -> Response {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            render_now(InternalErrorPage),
+        )
+            .into_response()
+    }
+}
+
+#[non_exhaustive]
+#[derive(Debug)]
+pub enum ErrorKind {
+    Sqlx(sqlx::Error),
+    Other(Box<dyn StdError>),
+}
+
+macro_rules! other_error_impl {
+    ($type:ty, $message:literal) => {
+        impl From<$type> for Error {
             fn from(value: $type) -> Self {
-                Self::Internal(value.into())
+                Self::err_to_other($message, value.into())
             }
         }
     };
 }
 
-#[derive(Debug)]
-pub enum AppError {
-    NoRoute,
-    Internal(Box<dyn Error>),
-}
+other_error_impl!(io::Error, "bad I/O");
+other_error_impl!(rinja::Error, "bad render");
 
-impl Display for AppError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            AppError::NoRoute => write!(f, "Client: No route matches."),
-            AppError::Internal(error) => write!(f, "Other: {error}"),
+impl From<sqlx::Error> for Error {
+    fn from(value: sqlx::Error) -> Self {
+        Self {
+            message: "bad sqlx".to_string(),
+            kind: Some(ErrorKind::Sqlx(value)),
         }
     }
 }
 
-impl IntoResponse for AppError {
-    fn into_response(self) -> Response {
-        let status = match self {
-            AppError::NoRoute => StatusCode::NOT_FOUND,
-            AppError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
-        };
-        let tmpl = ErrorTemplate { status }.render().unwrap();
-
-        (status, Html(tmpl)).into_response()
-    }
-}
-
-from_error_to_internal_impl!(std::io::Error, AppError);
-from_error_to_internal_impl!(sqlx::Error, AppError);
-from_error_to_internal_impl!(axum::Error, AppError);
+#[derive(Template)]
+#[template(path = "500.html")]
+struct InternalErrorPage;

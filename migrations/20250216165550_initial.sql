@@ -1,0 +1,15 @@
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY NOT NULL,
+    username TEXT UNIQUE NOT NULL,
+    created_on TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_on TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    password_hash TEXT NOT NULL
+);
+
+CREATE TABLE sessions (
+    token TEXT PRIMARY KEY NOT NULL,
+    user INTEGER NOT NULL,
+    expires_on TEXT NOT NULL,
+
+    FOREIGN KEY (user) REFERENCES users (id)
+);

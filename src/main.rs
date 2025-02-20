@@ -1,34 +1,49 @@
+mod auth;
 mod error;
-mod routes;
-mod templates;
+mod utils;
+
+use std::env;
+use std::sync::Arc;
 
 use axum::routing::get;
 use axum::Router;
-use tower_http::services::ServeDir;
+use sqlx::SqlitePool;
+use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
+use tracing_subscriber::EnvFilter;
 
-use error::AppError;
-use routes::{new_boards_router, ping};
+use crate::error::Error as AppError;
+
+pub type Result<T, E = AppError> = std::result::Result<T, E>;
+pub type AppState = Arc<State>;
+
+pub struct State {
+    pub db: SqlitePool,
+}
+
+impl State {
+    async fn new() -> Result<Self> {
+        let url = env::var("DATABASE_URL").expect("must set db url");
+
+        Ok(Self {
+            db: SqlitePool::connect(&url).await?,
+        })
+    }
+}
 
 #[tokio::main]
-async fn main() -> Result<(), AppError> {
+async fn main() -> Result<()> {
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
+        .with_env_filter(EnvFilter::from_env("PLANAR_LOG"))
+        .compact()
         .init();
 
-    let socket_addr = ("127.0.0.1", 8000);
-    let listener = tokio::net::TcpListener::bind(socket_addr).await?;
-    let board_app = new_boards_router().await?;
-
+    let state = Arc::new(State::new().await?);
+    let listener = TcpListener::bind(("127.0.0.1", 8080)).await?;
     let app = Router::new()
-        .route("/ping", get(ping))
-        .nest("/app", board_app)
-        .nest_service("/public", ServeDir::new("public"))
-        .nest_service("/third-party", ServeDir::new("node_modules"))
-        .fallback(|| async { AppError::NoRoute })
+        .route("/ping", get(|| async { "pong" }))
         .layer(TraceLayer::new_for_http());
 
-    println!("Served at: http://{}:{}", socket_addr.0, socket_addr.1);
     axum::serve(listener, app).await?;
 
     Ok(())
